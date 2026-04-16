@@ -61,7 +61,7 @@
       <div class="qr-corner tl"></div><div class="qr-corner tr"></div>
       <div class="qr-corner bl"></div><div class="qr-corner br"></div>
     </div>
-    <div class="qr-url" id="qrUrl">Chargement…</div>
+    <div class="qr-url" id="qrUrl"></div>
   </section>
   <section class="counter-section">
     <div class="section-label">// Scans totaux</div>
@@ -79,33 +79,22 @@
 </footer>
 
 <script>
-  // ============================================================
-  // ⚠️  REMPLACE CES 3 VALEURS avec tes infos Supabase
-  // ============================================================
   const SUPABASE_URL      = "https://eohkivnlutebhgdgiexr.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvaGtpdm5sdXRlYmhnZGdpZXhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTY2NzQsImV4cCI6MjA5MTg5MjY3NH0.Ut14GDFAmTdt5jLuI4gRqKErA8ScLtL8Qyo6BWGA7Zo";
-  const REDIRECT_URL      = "https://www.serrure-metal-art.fr/";
-  // ============================================================
 
-  // URL de la page /scan — c'est cette page elle-même avec ?scan=1
-  const SCAN_URL = window.location.href.split('?')[0] + '?scan=1';
+  const SCAN_URL     = "https://serrure-metal-art.github.io/qr-counter/?scan=1";
+  const REDIRECT_URL = "https://www.serrure-metal-art.fr/";
 
   let lastCount = null;
 
-  // --- Incrément via Supabase REST (appelé seulement si ?scan=1) ---
   async function handleScan() {
-    // On redirige d'abord immédiatement pour ne pas bloquer l'utilisateur
     window.location.replace(REDIRECT_URL);
-
-    // L'incrément se fait en arrière-plan via sendBeacon (fiable même après redirect)
-    const body = JSON.stringify({ id: 1 });
-    const url  = `${SUPABASE_URL}/rest/v1/rpc/increment_counter`;
-    navigator.sendBeacon(url + '?apikey=' + SUPABASE_ANON_KEY,
-      new Blob([body], { type: 'application/json' })
+    navigator.sendBeacon(
+      `${SUPABASE_URL}/rest/v1/rpc/increment_counter?apikey=${SUPABASE_ANON_KEY}`,
+      new Blob(['{}'], { type: 'application/json' })
     );
   }
 
-  // --- Lecture du compteur ---
   async function fetchCount() {
     try {
       const res  = await fetch(
@@ -115,7 +104,6 @@
       const data = await res.json();
       const val  = data[0].value;
       const display = document.getElementById('counterDisplay');
-
       if (lastCount !== null && val > lastCount) {
         const flash = document.getElementById('flash');
         flash.style.opacity = '0.08';
@@ -131,19 +119,17 @@
     }
   }
 
-  // --- Init ---
   const isScan = new URLSearchParams(window.location.search).has('scan');
 
   if (isScan) {
-    // L'utilisateur arrive via le QR code → incrémenter + rediriger
     handleScan();
   } else {
-    // Page normale → afficher QR + compteur
     QRCode.toCanvas(document.getElementById('qrCanvas'), SCAN_URL, {
       width: 200, margin: 0,
       color: { dark: '#0a0a0a', light: '#ffffff' }
     });
-    document.getElementById('qrUrl').innerHTML = 'Pointe vers : <span>' + SCAN_URL + '</span>';
+    document.getElementById('qrUrl').innerHTML =
+      'Pointe vers : <span>' + SCAN_URL + '</span>';
     fetchCount();
     setInterval(fetchCount, 3000);
   }
