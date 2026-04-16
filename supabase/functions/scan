@@ -1,0 +1,38 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const REDIRECT_URL = "https://www.serrure-metal-art.fr/";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
+  // Incrément atomique via RPC
+  const { error } = await supabase.rpc("increment_counter");
+
+  if (error) {
+    console.error("increment error:", error.message);
+    // On redirige quand même
+  }
+
+  // Redirection 302 (non cachée) vers le site
+  return new Response(null, {
+    status: 302,
+    headers: {
+      ...corsHeaders,
+      "Location": REDIRECT_URL,
+      "Cache-Control": "no-store",
+    },
+  });
+});
